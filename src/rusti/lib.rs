@@ -32,7 +32,6 @@ use std::path::PathBuf;
 pub mod completion;
 pub mod exec;
 pub mod input;
-pub mod readline;
 pub mod repl;
 
 /// Run `rusti` executable using `env::args`

@@ -32,10 +32,11 @@ use syntax::parse::{classify, token, PResult};
 use syntax::parse::{filemap_to_parser, ParseSess};
 use syntax::parse::attr::ParserAttr;
 
-use readline;
 use repl::{lookup_command, CmdArgs};
 
 use self::InputResult::*;
+
+use std::io::{stdout, stdin, Write};
 
 pub struct FileReader {
     reader: BufReader<File>,
@@ -111,18 +112,18 @@ impl InputReader {
     /// Returns `More` if further input is required for a complete result.
     /// In this case, the input received so far is buffered internally.
     pub fn read_input(&mut self, prompt: &str) -> InputResult {
-        let line = match readline::read_line(prompt) {
-            Some(s) => s,
-            None => return Eof,
-        };
+        stdout().write(prompt.as_bytes()).unwrap();
+        stdout().flush().unwrap();
+        let mut line = String::new();
+        if stdin().read_line(&mut line).is_err() {
+            return Eof
+        }
 
         self.buffer.push_str(&line);
 
         if self.buffer.is_empty() {
             return Empty;
         }
-
-        readline::push_history(&line);
 
         let res = if is_command(&self.buffer) {
             parse_command(&self.buffer, true)
@@ -151,14 +152,13 @@ impl InputReader {
 
         let mut buf = String::new();
 
-        loop {
-            let line = match readline::read_line(prompt) {
-                Some(s) => s,
-                None => return Eof,
-            };
+        let mut line = String::new();
 
-            if !line.is_empty() {
-                readline::push_history(&line);
+        loop {
+            stdout().write(prompt.as_bytes()).unwrap();
+            stdout().flush().unwrap();
+            if stdin().read_line(&mut line).is_err() {
+                return Eof
             }
 
             if line == ".q" || line == ":q" {
